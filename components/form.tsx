@@ -95,6 +95,8 @@ export default function Form() {
   const delta = currentStep - previousStep
   const [isValidAddress, setIsValidAddress] = useState(true)
   const [isSavedAddress, setIsSavedAddress] = useState(true)
+  const [seconds, setSeconds] = useState(30)
+  const [isLoading, setIsLoading] = useState(false)
 
   const {
     register,
@@ -155,6 +157,40 @@ export default function Form() {
     const selectedValue = event.target.value
     setIsValidAddress(selectedValue === 'No')
   }
+
+  const handleResendOTPSend = async () => {
+    try {
+      const appVerifier = new RecaptchaVerifier(
+        auth,
+        'recaptcha-container1',
+        {}
+      )
+      const phone = getValues('phoneNumber')
+      const phoneNumber = `+91${phone}`
+      const confirmationResult = await signInWithPhoneNumber(
+        auth,
+        phoneNumber,
+        appVerifier
+      )
+      setVerificationId(confirmationResult)
+      setSeconds(30)
+    } catch (error) {
+      console.error('Error sending OTP:', error)
+    }
+  }
+
+  useEffect(() => {
+    if (currentStep === 1) {
+      const intervalId = setInterval(() => {
+        if (seconds > 0) {
+          setSeconds(prevSeconds => prevSeconds - 1)
+        } else {
+          clearInterval(intervalId)
+        }
+      }, 1000)
+      return () => clearInterval(intervalId)
+    }
+  }, [currentStep, seconds])
 
   const handleSendOtp = async () => {
     console.log('otp send')
@@ -302,7 +338,7 @@ export default function Form() {
         next()
         break
       case 6:
-        setCurrentStep(step => step + 3)
+        getValues('request') === 'walkin' ? setCurrentStep(step => step + 3) : next()
         break
       default:
         next()
@@ -315,9 +351,9 @@ export default function Form() {
   }, [currentStep, getValues])
 
   return (
-    <section className='absolute inset-0 flex flex-col justify-between p-24'  >
+    <section className='absolute inset-0 flex flex-col justify-between p-24'>
       {/* logo */}
-      <div className='flex justify-left items-center '>
+      <div className='justify-left flex items-center '>
         <Image
           src='./eco_earn_svg.svg'
           alt='logo'
@@ -325,7 +361,7 @@ export default function Form() {
           width={10}
           className='h-12 w-auto object-contain'
         />
-       <p className='text-green-700 font-extrabold text-xl ml-4'> eco earn</p>
+        <p className='ml-4 text-xl font-extrabold text-green-700'> eco earn</p>
       </div>
       {/* steps */}
       <nav aria-label='Progress'>
@@ -412,7 +448,7 @@ export default function Form() {
             <h2 className='text-3xl font-semibold leading-7 text-gray-900'>
               Please enter the OTP sent to your phone.
             </h2>
-            <p className='mt-1 text-base leading-6 text-gray-600'>
+            {/* <p className='mt-1 text-base leading-6 text-gray-600'>
               Click{' '}
               <span
                 className='hover:cursor-pointer'
@@ -424,7 +460,30 @@ export default function Form() {
                 <b>here</b>
               </span>{' '}
               to resend the OTP.
+            </p> */}
+
+            <p className='mt-1 text-base leading-6 text-gray-600'>
+              {seconds > 0 ? (
+                `Resend OTP After ${seconds}`
+              ) : (
+                <button
+                  onClick={() => {
+                    setIsLoading(true)
+                    handleResendOTPSend().then(() => {
+                      setIsLoading(false)
+                    })
+                  }}
+                  className='btn userButton'
+                >
+                  {isLoading ? (
+                    <div className='spinner-border ' role='status'></div>
+                  ) : (
+                    'Resend OTP'
+                  )}
+                </button>
+              )}
             </p>
+
             <div className='mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6'>
               {/* <div id='recaptcha-container'></div> */}
               <div className='sm:col-span-3'>
