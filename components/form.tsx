@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { FormDataSchema } from '@/lib/schema'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, SubmitHandler } from 'react-hook-form'
+import Image from 'next/image'
 
 import { signInWithPhoneNumber, RecaptchaVerifier } from 'firebase/auth'
 import { auth } from '../lib/firebase'
@@ -28,13 +29,13 @@ const steps = [
     fields: ['otp']
   },
 
-//   {how many bottles you have ?: "12", which character is missing a b d ?: "Forenoon(before 12 pm)"}
-// how many bottles you have ?
-// : 
-// "12"
-// which character is missing a b d ?
-// : 
-// "Forenoon(before 12 pm)"
+  //   {how many bottles you have ?: "12", which character is missing a b d ?: "Forenoon(before 12 pm)"}
+  // how many bottles you have ?
+  // :
+  // "12"
+  // which character is missing a b d ?
+  // :
+  // "Forenoon(before 12 pm)"
 
   { id: 'STEP 3', name: 'New Request', fields: ['request'] }, //walkin -> no contain -> time
   {
@@ -118,7 +119,7 @@ export default function Form() {
   type FieldName = keyof Inputs
 
   const next = async () => {
-    console.log('next', currentStep)
+    // console.log('next', currentStep)
     // const fields = steps[currentStep].fields
     // const output = await trigger(fields as FieldName[], { shouldFocus: true })
 
@@ -138,6 +139,9 @@ export default function Form() {
     if (currentStep > 0) {
       setPreviousStep(currentStep)
       setCurrentStep(step => step - 1)
+    }
+    if (currentStep === 9 && getValues('request') === 'walkin') {
+      setCurrentStep(step => step - 2)
     }
   }
 
@@ -223,11 +227,11 @@ export default function Form() {
           }
         },
         error => {
-          alert('Geolocation is not supported by your browser1')
+          alert('Geolocation is not supported by your browser')
         }
       )
     } else {
-      alert('Geolocation is not supported by your browser2')
+      alert('Geolocation is not supported by your browser')
     }
   }
 
@@ -253,54 +257,55 @@ export default function Form() {
   }
 
   const newSubmission = async () => {
-    const address_value = localStorage.getItem("address");
+    const address_value = localStorage.getItem('address')
     const submitData = {
-      "how many bottles you have ?": getValues("containerNumber"),
-      "which character is missing a b d ?": getValues("preferredTime"),
-      "confirmLocationSave" : getValues("addressVerification")
-    };
+      'how many bottles you have ?': getValues('containerNumber'),
+      'which character is missing a b d ?': getValues('preferredTime'),
+      confirmLocationSave: getValues('addressVerification')
+    }
     try {
-      const response = await api.post("/api/v1/create-new-submission", {
+      const response = await api.post('/api/v1/create-new-submission', {
         pickUpAddress: address_value,
-        no_of_bottles: getValues("containerNumber"),
-        pickUpType: getValues("request"),
-        info: { ...submitData },
-      });
+        no_of_bottles: getValues('containerNumber'),
+        pickUpType: getValues('request'),
+        info: { ...submitData }
+      })
       if (response.status === 200) {
-        console.log(response);
-        alert("Request submitted successfully.");
+        console.log(response)
+        alert('Request submitted successfully.')
       } else {
-        alert("Request submission failed.");
+        alert('Request submission failed.')
       }
     } catch (error) {
-      console.log(error);
+      console.log(error)
     }
-  };
+  }
 
   const handleAllCases = async () => {
-    if (currentStep === 0) {
-      console.log('called 0')
-      await handleSendOtp()
-      // next()
-    } else if (currentStep === 1) {
-      console.log('called 1')
-      await handleVerifyOtp()
-    } else if (currentStep === 2) {
-      console.log('called 2')
-      next()
-    } else if (currentStep === 4) {
-      console.log('called 3')
-      handleGetLocation('address', false)
-      next()
-    } else if (currentStep === 5) {
-      setIsRegistered(true)
-      const fullname = getValues('fullName')
-      const email = getValues('email')
-      const address = getValues('address')
-      updateProfile(fullname, email, address)
-      next()
-    } else {
-      next()
+    switch (currentStep) {
+      case 0:
+        await handleSendOtp()
+        break
+      case 1:
+        await handleVerifyOtp()
+        break
+      case 4:
+        handleGetLocation('address', false)
+        next()
+        break
+      case 5:
+        setIsRegistered(true)
+        const fullname = getValues('fullName')
+        const email = getValues('email')
+        const address = getValues('address')
+        updateProfile(fullname, email, address)
+        next()
+        break
+      case 6:
+        setCurrentStep(step => step + 3)
+        break
+      default:
+        next()
     }
   }
 
@@ -310,7 +315,18 @@ export default function Form() {
   }, [currentStep, getValues])
 
   return (
-    <section className='absolute inset-0 flex flex-col justify-between p-24'>
+    <section className='absolute inset-0 flex flex-col justify-between p-24'  >
+      {/* logo */}
+      <div className='flex justify-left items-center '>
+        <Image
+          src='./eco_earn_svg.svg'
+          alt='logo'
+          height={10}
+          width={10}
+          className='h-12 w-auto object-contain'
+        />
+       <p className='text-green-700 font-extrabold text-xl ml-4'> eco earn</p>
+      </div>
       {/* steps */}
       <nav aria-label='Progress'>
         <ol role='list' className='space-y-4 md:flex md:space-x-8 md:space-y-0'>
