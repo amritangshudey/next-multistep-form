@@ -117,7 +117,12 @@ export default function Form() {
   type FieldName = keyof Inputs
 
   const next = async () => {
-    const fields = isRegistered === 2 ?  steps[currentStep-4].fields : isRegistered === 1 ? steps[currentStep].fields : registrationSteps[currentStep - 2].fields
+    const fields =
+      isRegistered === 2
+        ? steps[currentStep - 4].fields
+        : isRegistered === 1
+          ? steps[currentStep].fields
+          : registrationSteps[currentStep - 2].fields
     const output = await trigger(fields as FieldName[], { shouldFocus: true })
 
     if (!output) return
@@ -159,8 +164,20 @@ export default function Form() {
         'recaptcha-container1',
         {}
       )
+
       const phone = getValues('phoneNumber')
+
+      // Validate phone number format
+      const phoneNumberRegex = /^\d{10}$/ // Assuming 10 digits for phone number
+      if (!phoneNumberRegex.test(phone)) {
+        console.error('Invalid phone number format')
+        alert('Invalid phone number format')
+        setIsLoading(false)
+        return // Exit function if phone number format is invalid
+      }
+
       const phoneNumber = `+91${phone}`
+
       const confirmationResult = await signInWithPhoneNumber(
         auth,
         phoneNumber,
@@ -193,6 +210,14 @@ export default function Form() {
         size: 'invisible'
       })
       const value = getValues('phoneNumber')
+      // Validate phone number format
+      const phoneNumberRegex = /^\d{10}$/ // Assuming 10 digits for phone number
+      if (!phoneNumberRegex.test(value)) {
+        console.error('Invalid phone number format')
+        alert('Invalid phone number format')
+        setIsLoading(false)
+        return // Exit function if phone number format is invalid
+      }
       const phoneNumber = `+91${value}`
       const confirmationResult = await signInWithPhoneNumber(
         auth,
@@ -287,7 +312,7 @@ export default function Form() {
 
       if (response.data.success) {
         localStorage.setItem('address', address)
-        alert('Profile updated successfully.')
+        // alert('Profile updated successfully.')
       } else {
         alert('Profile update failed.')
       }
@@ -332,7 +357,7 @@ export default function Form() {
         await handleVerifyOtp()
         break
       case 4:
-        handleGetLocation('address', false)
+        // handleGetLocation('address', false)
         next()
         break
       case 5:
@@ -355,6 +380,7 @@ export default function Form() {
 
   useEffect(() => {
     console.log('currentStep', currentStep)
+    console.log('error', errors)
   }, [currentStep])
 
   return (
@@ -377,10 +403,10 @@ export default function Form() {
             ? steps.map((step, index) => (
                 <li key={step.name} className='md:flex-1'>
                   <div
-                    className={`group flex w-full flex-col border-l-4 py-2 pl-4 transition-colors md:border-l-0 md:border-t-4 md:pb-0 md:pl-0 md:pt-4 ${(isRegistered === 2 ? ((currentStep - 4) >= index) :((currentStep) >= index)) ? 'border-[#02b154]' : 'border-gray-200'}`}
+                    className={`group flex w-full flex-col border-l-4 py-2 pl-4 transition-colors md:border-l-0 md:border-t-4 md:pb-0 md:pl-0 md:pt-4 ${(isRegistered === 2 ? currentStep - 4 >= index : currentStep >= index) ? 'border-[#02b154]' : 'border-gray-200'}`}
                   >
                     <span
-                      className={`text-xl font-medium transition-colors ${(isRegistered === 2 ? ((currentStep - 4) >= index) :((currentStep) >= index)) ? 'text-[#02b154]' : 'text-gray-500'}`}
+                      className={`text-xl font-medium transition-colors ${(isRegistered === 2 ? currentStep - 4 >= index : currentStep >= index) ? 'text-[#02b154]' : 'text-gray-500'}`}
                     >
                       {step.id}
                     </span>
@@ -634,7 +660,7 @@ export default function Form() {
         {currentStep === 5 && (
           <>
             <h2 className='text-3xl font-semibold leading-7 text-gray-900'>
-              Complete Registration
+              Profile Updated Successfully !!
             </h2>
             <p className='mt-1 text-base leading-6 text-gray-600'>
               Thank you for your submission.
@@ -748,8 +774,10 @@ export default function Form() {
                 </div>
                 <button
                   className='mt-4 rounded bg-green-300 px-4 py-2 font-bold text-white hover:bg-green-700'
-                  onClick={() => {setIsSavedAddress(true) 
-                    localStorage.setItem('address', getValues('address'))}}
+                  onClick={() => {
+                    setIsSavedAddress(true)
+                    localStorage.setItem('address', getValues('address'))
+                  }}
                 >
                   update
                 </button>
@@ -831,8 +859,10 @@ export default function Form() {
                 </div>
                 <button
                   className='mt-4 rounded bg-green-300 px-4 py-2 font-bold text-white hover:bg-green-700'
-                  onClick={() => {setIsValidAddress(true)
-                    localStorage.setItem('address', getValues('address'))}}
+                  onClick={() => {
+                    setIsValidAddress(true)
+                    localStorage.setItem('address', getValues('address'))
+                  }}
                 >
                   update
                 </button>
