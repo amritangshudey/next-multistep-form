@@ -1,12 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 
 import { z } from 'zod'
 import { FormDataSchema } from '@/lib/schema'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, SubmitHandler } from 'react-hook-form'
+
+import { signInWithPhoneNumber, RecaptchaVerifier } from 'firebase/auth'
+import { auth } from '../lib/firebase'
+import api, { setAuthorization } from '../lib/api'
 
 type Inputs = z.infer<typeof FormDataSchema>
 
@@ -21,26 +25,86 @@ const steps = [
     name: 'OTP',
     fields: ['otp']
   },
+  // {
+  //   id: 'STEP 3',
+  //   name: 'Full Name',
+  //   fields: ['fullName']
+  // },
+  // {
+  //   id: 'STEP 4',
+  //   name: 'Email Address',
+  //   fields: ['email']
+  // },
+
+  // {
+  //   id: 'STEP 5',
+  //   name: 'Profile Address',
+  //   fields: ['address']
+  // },
+  // { id: 'STEP 6', name: 'Complete Registration', fields: ['register'] },
+
+  // one part(skip if registered user)
+  { id: 'STEP 3', name: 'New Request', fields: ['request'] }, // (pickup/walkin)
   {
-    id: 'STEP 3',
+    id: 'STEP 4', //(select fro saved add/new address)
+    name: 'Address Type',
+    fields: ['addressType']
+  },
+  {
+    id: 'STEP 5',
+    name: 'Address Verification', //(Your saved Address is: 13.0136351,77.7140899 Are your sure this is valid address ?) yes /no
+    fields: ['addressVerification']
+  },
+
+  {
+    id: 'STEP 6',
+    name: 'Container Number',
+    fields: ['containerNumber']
+  },
+  {
+    id: 'STEP 7',
+    name: 'Preferred Time',
+    fields: ['preferredTime']
+  },
+  {
+    id: 'STEP 8',
+    name: 'Complete Request',
+    fields: ['submit']
+  }
+]
+
+const registrationSteps = [
+  
+  {
+    id: 'STEP 1',
     name: 'Full Name',
     fields: ['fullName']
   },
   {
-    id: 'STEP 4',
-    name: 'Address',
+    id: 'STEP 2',
+    name: 'Email Address',
+    fields: ['email']
+  },
+  {
+    id: 'STEP 3',
+    name: 'Profile Address',
     fields: ['address']
   },
-  { id: 'STEP 5', name: 'Complete' }
+  { id: 'STEP 4', name: 'Complete Registration', fields: ['register'] }
 ]
 
 export default function Form() {
   const [previousStep, setPreviousStep] = useState(0)
   const [currentStep, setCurrentStep] = useState(0)
+  const [verificationId, setVerificationId] = useState<Awaited<
+    ReturnType<typeof signInWithPhoneNumber>
+  > | null>(null)
+  const [isRegistered, setIsRegistered] = useState(true)
   const delta = currentStep - previousStep
 
   const {
     register,
+    getValues,
     handleSubmit,
     watch,
     reset,
@@ -49,7 +113,6 @@ export default function Form() {
   } = useForm<Inputs>({
     resolver: zodResolver(FormDataSchema)
   })
-  
 
   const processForm: SubmitHandler<Inputs> = data => {
     // I'm just logging it here, do whatever you want with the data from here.
@@ -61,13 +124,14 @@ export default function Form() {
   type FieldName = keyof Inputs
 
   const next = async () => {
-    const fields = steps[currentStep].fields
-    const output = await trigger(fields as FieldName[], { shouldFocus: true })
+    console.log('next', currentStep)
+    // const fields = steps[currentStep].fields
+    // const output = await trigger(fields as FieldName[], { shouldFocus: true })
 
-    if (!output) return
+    // if (!output) return
 
-    if (currentStep < steps.length - 1) {
-      if (currentStep === steps.length - 2) {
+    if (currentStep < steps.length + registrationSteps.length - 1) {
+      if (currentStep === steps.length + registrationSteps.length - 2) {
         await handleSubmit(processForm)()
       }
       setPreviousStep(currentStep)
@@ -82,18 +146,141 @@ export default function Form() {
     }
   }
 
+  const handleSendOtp = async () => {
+    try {
+      const appVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible'
+      })
+      const value = getValues('phoneNumber')
+      const phoneNumber = `+91${value}`
+      const confirmationResult = await signInWithPhoneNumber(
+        auth,
+        phoneNumber,
+        appVerifier
+      )
+      const response = await api.post('/api/v1/auth/login', { phone: value })
+      if (response.data.success) {
+        setVerificationId(confirmationResult)
+        next()
+      } else {
+        alert('Phone verification request failed.')
+      }
+    } catch (error) {
+      alert('Phone verification request failed.')
+    }
+  }
+
+  const handleVerifyOtp = async () => {
+    console.log('atleat here')
+    try {
+      console.log('inside', verificationId)
+      const phone = getValues('phoneNumber')
+      const otp = getValues('otp')
+      const user = await verificationId?.confirm(phone);
+      // console.log("here1", user)
+      const response = await api.post('/api/v1/auth/validate-user', {
+        phone: phone,
+        otp: otp
+      })
+      console.log('here2', response)
+      if (response.data.success) {
+        setAuthorization(response.data.result.token)
+        if (response.data.result.isRegistered) {
+          // return nextStep();
+          console.log('registered')
+          next()
+        }
+        // return registerDetailNext();
+        console.log('not registered')
+        next()
+      }
+    } catch (error) {
+      // addArray("1", error.message);
+      alert('OTP verification failed.2')
+    }
+  }
+
+  const profileUpdate = (key: any, address: any) => {
+    console.log('profile update')
+  }
+
+  const handleGetLocation = (key: string, isProfileUpdate: boolean) => {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          const { latitude, longitude } = position.coords
+          const address = `${latitude},${longitude}`
+          if (isProfileUpdate) {
+            localStorage.setItem('address', address)
+            profileUpdate(key, address)
+          } else {
+            localStorage.setItem('address', address)
+          }
+        },
+        error => {
+          alert('Geolocation is not supported by your browser1')
+        }
+      )
+    } else {
+      alert('Geolocation is not supported by your browser2')
+    }
+  }
+
+  const handleAllCases = async () => {
+    if (currentStep === 0) {
+      console.log('called 0')
+      // await handleSendOtp()
+      next()
+    } else if (currentStep === 1) {
+      console.log('called 1')
+      // await handleVerifyOtp()
+      setIsRegistered(false)
+      next()
+    } else if (currentStep === 2) {
+      console.log('called 2')
+      next()
+    } else if (currentStep === 4) {
+      console.log('called 3')
+      handleGetLocation('address', false)
+      next()
+    } else if (currentStep === 5) {
+      setIsRegistered(true)
+      next()
+    } else{
+      next();
+    }
+  }
+
+  useEffect(() => {
+    console.log('currentStep', currentStep)
+  }, [currentStep])
+  
+
   return (
     <section className='absolute inset-0 flex flex-col justify-between p-24'>
       {/* steps */}
       <nav aria-label='Progress'>
         <ol role='list' className='space-y-4 md:flex md:space-x-8 md:space-y-0'>
-          {steps.map((step, index) => (
+          {isRegistered ? steps.map((step, index) => (
             <li key={step.name} className='md:flex-1'>
               <div
-                className={`group flex w-full flex-col border-l-4 py-2 pl-4 transition-colors md:border-l-0 md:border-t-4 md:pb-0 md:pl-0 md:pt-4 ${currentStep >= index ? 'border-[#02b154]' : 'border-gray-200'}`}
+                className={`group flex w-full flex-col border-l-4 py-2 pl-4 transition-colors md:border-l-0 md:border-t-4 md:pb-0 md:pl-0 md:pt-4 ${currentStep -4 >= index ? 'border-[#02b154]' : 'border-gray-200'}`}
               >
                 <span
-                  className={`text-xl font-medium transition-colors ${currentStep >= index ? 'text-[#02b154]' : 'text-gray-500'}`}
+                  className={`text-xl font-medium transition-colors ${currentStep - 4 >= index ? 'text-[#02b154]' : 'text-gray-500'}`}
+                >
+                  {step.id}
+                </span>
+                <span className='text-sm font-medium'>{step.name}</span>
+              </div>
+            </li>
+          )) : registrationSteps.map((step, index) => (
+            <li key={step.name} className='md:flex-1'>
+              <div
+                className={`group flex w-full flex-col border-l-4 py-2 pl-4 transition-colors md:border-l-0 md:border-t-4 md:pb-0 md:pl-0 md:pt-4 ${currentStep -2  >= index ? 'border-[#02b154]' : 'border-gray-200'}`}
+              >
+                <span
+                  className={`text-xl font-medium transition-colors ${currentStep - 2 >= index ? 'text-[#02b154]' : 'text-gray-500'}`}
                 >
                   {step.id}
                 </span>
@@ -118,6 +305,7 @@ export default function Form() {
             <p className='mt-1 text-base leading-6 text-gray-600'>
               You will be receiving an OTP on this number.
             </p>
+            <div id='recaptcha-container'></div>
             <div className='mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6'>
               <div className='sm:col-span-3'>
                 <label
@@ -167,6 +355,7 @@ export default function Form() {
               to resend the OTP.
             </p>
             <div className='mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6'>
+              {/* <div id='recaptcha-container'></div> */}
               <div className='sm:col-span-3'>
                 <label
                   htmlFor='otp'
@@ -229,8 +418,46 @@ export default function Form() {
             </div>
           </motion.div>
         )}
-
         {currentStep === 3 && (
+          <motion.div
+          
+            initial={{ x: delta >= 0 ? '50%' : '-50%', opacity: 0 }}  
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+          >
+            <h2 className='text-3xl font-semibold leading-7 text-gray-900'>
+              Email Address
+            </h2>
+            <p className='mt-1 text-base leading-6 text-gray-600'>
+              Please enter your email address here.
+            </p>
+            <div className='mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6'>
+              <div className='sm:col-span-3'>
+                <label
+                  htmlFor='email'
+                  className='block text-sm font-medium leading-6 text-gray-900'
+                >
+                  Email
+                </label>
+                <div className='mt-2'>
+                  <input
+                    type='email'
+                    id='email'
+                    {...register('email')}
+                    className='block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6'
+                  />
+                  {errors.email?.message && (
+                    <p className='mt-2 text-sm text-red-400'>
+                      {errors.email.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {currentStep === 4 && (
           <motion.div
             initial={{ x: delta >= 0 ? '50%' : '-50%', opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -268,16 +495,214 @@ export default function Form() {
           </motion.div>
         )}
 
-        {currentStep === 4 && (
+        {currentStep === 5 && (
           <>
             <h2 className='text-3xl font-semibold leading-7 text-gray-900'>
-              Complete
+              Complete Registration
+            </h2>
+            <p className='mt-1 text-base leading-6 text-gray-600'>
+              Thank you for your submission.
+            </p>
+
+          </>
+        )}
+
+        {currentStep === 6 && (
+          <>
+            <h2 className='text-3xl font-semibold leading-7 text-gray-900'>
+              New Request
+            </h2>
+            <p className='mt-1 text-base leading-6 text-gray-600'>
+              Please select the type of request you want to make.
+            </p>
+            <div className='mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6'>
+              <div className='sm:col-span-3'>
+                <label
+                  htmlFor='request'
+                  className='block text-sm font-medium leading-6 text-gray-900'
+                >
+                  Request
+                </label>
+                <div className='mt-2'>
+                  <select
+                    id='request'
+                    {...register('request')}
+                    className='block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6'
+                  >
+                    <option value='pickup'>Pickup</option>
+                    <option value='walkin'>Walkin</option>
+                  </select>
+                  {errors.request?.message && (
+                    <p className='mt-2 text-sm text-red-400'>
+                      {errors.request.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {currentStep === 7 && (
+          <>
+            <h2 className='text-3xl font-semibold leading-7 text-gray-900'>
+              Address Type
+            </h2>
+            <p className='mt-1 text-base leading-6 text-gray-600'>
+              Please select the type of address you want to use.
+            </p>
+            <div className='mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6'>
+              <div className='sm:col-span-3'>
+                <label
+                  htmlFor='addressType'
+                  className='block text-sm font-medium leading-6 text-gray-900'
+                >
+                  Address Type
+                </label>
+                <div className='mt-2'>
+                  <select
+                    id='addressType'
+                    {...register('addressType')}
+                    className='block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6'
+                  >
+                    <option value='saved'>Saved Address</option>
+                    <option value='new'>New Address</option>
+                  </select>
+                  {errors.addressType?.message && (
+                    <p className='mt-2 text-sm text-red-400'>
+                      {errors.addressType.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {currentStep === 8 && (
+          <>
+            <h2 className='text-3xl font-semibold leading-7 text-gray-900'>
+              Address Verification
+            </h2>
+            <p className='mt-1 text-base leading-6 text-gray-600'>
+              Your saved Address is: { localStorage.getItem('address')}
+            </p>
+            <p className='mt-1 text-base leading-6 text-gray-600'>
+            Are your sure this is valid address ?
+            </p>
+            <div className='mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6'>
+              <div className='sm:col-span-3'>
+                <label
+                  htmlFor='addressVerification'
+                  className='block text-sm font-medium leading-6 text-gray-900'
+                >
+                  Address Verification
+                </label>
+                <div className='mt-2'>
+                  <select
+                    id='addressVerification'
+                    {...register('addressVerification')}
+                    className='block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6'
+                  >
+                    <option value='yes'>Yes</option>
+                    <option value='no'>No</option>
+                  </select>
+                  {errors.addressVerification?.message && (
+                    <p className='mt-2 text-sm text-red-400'>
+                      {errors.addressVerification.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+
+        {currentStep === 9 && (
+          <>
+            <h2 className='text-3xl font-semibold leading-7 text-gray-900'>
+              Container Number
+            </h2>
+            <p className='mt-1 text-base leading-6 text-gray-600'>
+              Please enter the number of containers.
+            </p>
+            <div className='mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6'>
+              <div className='sm:col-span-3'>
+                <label
+                  htmlFor='containerNumber'
+                  className='block text-sm font-medium leading-6 text-gray-900'
+                >
+                  Container Number
+                </label>
+                <div className='mt-2'>
+                  <input
+                    type='text'
+                    id='containerNumber'
+                    {...register('containerNumber')}
+                    className='block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6'
+                  />
+                  {errors.containerNumber?.message && (
+                    <p className='mt-2 text-sm text-red-400'>
+                      {errors.containerNumber.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+
+        {currentStep === 10 && (
+          <>
+            <h2 className='text-3xl font-semibold leading-7 text-gray-900'>
+              Preferred Time
+            </h2>
+            <p className='mt-1 text-base leading-6 text-gray-600'>
+              Please select the preferred time.
+            </p>
+            <div className='mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6'>
+              <div className='sm:col-span-3'>
+                <label
+                  htmlFor='preferredTime'
+                  className='block text-sm font-medium leading-6 text-gray-900'
+                >
+                  Preferred Time
+                </label>
+                <div className='mt-2'>
+                  <select
+                    id='preferredTime'
+                    {...register('preferredTime')}
+                    className='block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6'
+                  >
+                    <option value='Forenoon(before 12 pm)'>Forenoon(before 12 pm)</option>
+                    <option value='Afternoon(after 12 pm)'>Afternoon(after 12 pm)</option>
+                    <option value='Evening(after 6 pm)'>Evening(after 6 pm)</option>
+                  </select>
+                  {errors.preferredTime?.message && (
+                    <p className='mt-2 text-sm text-red-400'>
+                      {errors.preferredTime.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {currentStep === 11 && (
+          <>
+            <h2 className='text-3xl font-semibold leading-7 text-gray-900'>
+              Complete Request
             </h2>
             <p className='mt-1 text-base leading-6 text-gray-600'>
               Thank you for your submission.
             </p>
           </>
         )}
+
+
       </form>
 
       {/* Navigation */}
@@ -286,7 +711,7 @@ export default function Form() {
           <button
             type='button'
             onClick={prev}
-            disabled={currentStep === 0}
+            disabled={(currentStep === 0 || currentStep === 6)}
             className='rounded bg-white px-2 py-1 text-sm font-semibold text-sky-900 shadow-sm ring-1 ring-inset ring-sky-300 hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-50'
           >
             <svg
@@ -306,8 +731,8 @@ export default function Form() {
           </button>
           <button
             type='button'
-            onClick={next}
-            disabled={currentStep === steps.length - 1}
+            onClick={handleAllCases}
+            disabled={currentStep === steps.length + registrationSteps.length - 1}
             className='rounded bg-white px-2 py-1 text-sm font-semibold text-sky-900 shadow-sm ring-1 ring-inset ring-sky-300 hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-50'
           >
             <svg

@@ -11,5 +11,11 @@ export const FormDataSchema = z.object({
   otp: z
     .string()
     .length(6, 'OTP should be 6 digits long')
-    .regex(/^\d+$/, 'OTP should only contain numbers')
+    .regex(/^\d+$/, 'OTP should only contain numbers'),
+  email: z.string().email('Invalid email address'),
+  request: z.enum(['pickup', 'walkin']),
+  addressType: z.string().min(1, 'Address type is required'),
+  addressVerification: z.string().min(1, 'Address verification is required'),
+  containerNumber: z.string().min(1, 'Container number is required'),
+  preferredTime: z.enum(['Forenoon(before 12 pm)', 'Afternoon(after 12 pm)', 'Evening(after 6 pm)']),
 })
