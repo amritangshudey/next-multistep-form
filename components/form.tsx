@@ -12,6 +12,8 @@ import { signInWithPhoneNumber, RecaptchaVerifier } from 'firebase/auth'
 import { auth } from '../lib/firebase'
 import api, { setAuthorization } from '../lib/api'
 
+interface SelectChangeEvent extends React.ChangeEvent<HTMLSelectElement> {}
+
 type Inputs = z.infer<typeof FormDataSchema>
 
 const steps = [
@@ -25,34 +27,24 @@ const steps = [
     name: 'OTP',
     fields: ['otp']
   },
-  // {
-  //   id: 'STEP 3',
-  //   name: 'Full Name',
-  //   fields: ['fullName']
-  // },
-  // {
-  //   id: 'STEP 4',
-  //   name: 'Email Address',
-  //   fields: ['email']
-  // },
 
-  // {
-  //   id: 'STEP 5',
-  //   name: 'Profile Address',
-  //   fields: ['address']
-  // },
-  // { id: 'STEP 6', name: 'Complete Registration', fields: ['register'] },
+//   {how many bottles you have ?: "12", which character is missing a b d ?: "Forenoon(before 12 pm)"}
+// how many bottles you have ?
+// : 
+// "12"
+// which character is missing a b d ?
+// : 
+// "Forenoon(before 12 pm)"
 
-  // one part(skip if registered user)
-  { id: 'STEP 3', name: 'New Request', fields: ['request'] }, // (pickup/walkin)
+  { id: 'STEP 3', name: 'New Request', fields: ['request'] }, //walkin -> no contain -> time
   {
-    id: 'STEP 4', //(select fro saved add/new address)
+    id: 'STEP 4',
     name: 'Address Type',
     fields: ['addressType']
   },
   {
     id: 'STEP 5',
-    name: 'Address Verification', //(Your saved Address is: 13.0136351,77.7140899 Are your sure this is valid address ?) yes /no
+    name: 'Address Verification',
     fields: ['addressVerification']
   },
 
@@ -74,7 +66,6 @@ const steps = [
 ]
 
 const registrationSteps = [
-  
   {
     id: 'STEP 1',
     name: 'Full Name',
@@ -101,10 +92,13 @@ export default function Form() {
   > | null>(null)
   const [isRegistered, setIsRegistered] = useState(true)
   const delta = currentStep - previousStep
+  const [isValidAddress, setIsValidAddress] = useState(true)
+  const [isSavedAddress, setIsSavedAddress] = useState(true)
 
   const {
     register,
     getValues,
+    setValue,
     handleSubmit,
     watch,
     reset,
@@ -133,6 +127,7 @@ export default function Form() {
     if (currentStep < steps.length + registrationSteps.length - 1) {
       if (currentStep === steps.length + registrationSteps.length - 2) {
         await handleSubmit(processForm)()
+        await newSubmission()
       }
       setPreviousStep(currentStep)
       setCurrentStep(step => step + 1)
@@ -146,7 +141,19 @@ export default function Form() {
     }
   }
 
+  const handleAddressTypeChange = (event: SelectChangeEvent) => {
+    const selectedValue = event.target.value
+    setIsSavedAddress(selectedValue === 'saved')
+    setValue('addressType', selectedValue)
+  }
+
+  const handleAddressValidationChange = (event: SelectChangeEvent) => {
+    const selectedValue = event.target.value
+    setIsValidAddress(selectedValue === 'No')
+  }
+
   const handleSendOtp = async () => {
+    console.log('otp send')
     try {
       const appVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         size: 'invisible'
@@ -176,27 +183,25 @@ export default function Form() {
       console.log('inside', verificationId)
       const phone = getValues('phoneNumber')
       const otp = getValues('otp')
-      const user = await verificationId?.confirm(phone);
-      // console.log("here1", user)
+      const user = await verificationId?.confirm(otp)
       const response = await api.post('/api/v1/auth/validate-user', {
         phone: phone,
         otp: otp
       })
-      console.log('here2', response)
       if (response.data.success) {
         setAuthorization(response.data.result.token)
         if (response.data.result.isRegistered) {
-          // return nextStep();
           console.log('registered')
-          next()
+          setIsRegistered(true)
+          setCurrentStep(step => step + 5)
+          return
         }
-        // return registerDetailNext();
         console.log('not registered')
+        setIsRegistered(false)
         next()
       }
     } catch (error) {
-      // addArray("1", error.message);
-      alert('OTP verification failed.2')
+      alert('OTP verification failed.')
     }
   }
 
@@ -226,16 +231,60 @@ export default function Form() {
     }
   }
 
+  const updateProfile = async (
+    fullName: string,
+    email: string,
+    address: string
+  ) => {
+    try {
+      const response = await api.put('/api/v1/auth/profile-create', {
+        fullname: fullName,
+        email: email,
+        address: address
+      })
+
+      if (response.data.success) {
+        localStorage.setItem('address', address)
+        alert('Profile updated successfully.')
+      } else {
+        alert('Profile update failed.')
+      }
+    } catch (error) {}
+  }
+
+  const newSubmission = async () => {
+    const address_value = localStorage.getItem("address");
+    const submitData = {
+      "how many bottles you have ?": getValues("containerNumber"),
+      "which character is missing a b d ?": getValues("preferredTime"),
+      "confirmLocationSave" : getValues("addressVerification")
+    };
+    try {
+      const response = await api.post("/api/v1/create-new-submission", {
+        pickUpAddress: address_value,
+        no_of_bottles: getValues("containerNumber"),
+        pickUpType: getValues("request"),
+        info: { ...submitData },
+      });
+      if (response.status === 200) {
+        console.log(response);
+        alert("Request submitted successfully.");
+      } else {
+        alert("Request submission failed.");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   const handleAllCases = async () => {
     if (currentStep === 0) {
       console.log('called 0')
-      // await handleSendOtp()
-      next()
+      await handleSendOtp()
+      // next()
     } else if (currentStep === 1) {
       console.log('called 1')
-      // await handleVerifyOtp()
-      setIsRegistered(false)
-      next()
+      await handleVerifyOtp()
     } else if (currentStep === 2) {
       console.log('called 2')
       next()
@@ -245,49 +294,55 @@ export default function Form() {
       next()
     } else if (currentStep === 5) {
       setIsRegistered(true)
+      const fullname = getValues('fullName')
+      const email = getValues('email')
+      const address = getValues('address')
+      updateProfile(fullname, email, address)
       next()
-    } else{
-      next();
+    } else {
+      next()
     }
   }
 
   useEffect(() => {
     console.log('currentStep', currentStep)
-  }, [currentStep])
-  
+    localStorage.setItem('address', getValues('address'))
+  }, [currentStep, getValues])
 
   return (
     <section className='absolute inset-0 flex flex-col justify-between p-24'>
       {/* steps */}
       <nav aria-label='Progress'>
         <ol role='list' className='space-y-4 md:flex md:space-x-8 md:space-y-0'>
-          {isRegistered ? steps.map((step, index) => (
-            <li key={step.name} className='md:flex-1'>
-              <div
-                className={`group flex w-full flex-col border-l-4 py-2 pl-4 transition-colors md:border-l-0 md:border-t-4 md:pb-0 md:pl-0 md:pt-4 ${currentStep -4 >= index ? 'border-[#02b154]' : 'border-gray-200'}`}
-              >
-                <span
-                  className={`text-xl font-medium transition-colors ${currentStep - 4 >= index ? 'text-[#02b154]' : 'text-gray-500'}`}
-                >
-                  {step.id}
-                </span>
-                <span className='text-sm font-medium'>{step.name}</span>
-              </div>
-            </li>
-          )) : registrationSteps.map((step, index) => (
-            <li key={step.name} className='md:flex-1'>
-              <div
-                className={`group flex w-full flex-col border-l-4 py-2 pl-4 transition-colors md:border-l-0 md:border-t-4 md:pb-0 md:pl-0 md:pt-4 ${currentStep -2  >= index ? 'border-[#02b154]' : 'border-gray-200'}`}
-              >
-                <span
-                  className={`text-xl font-medium transition-colors ${currentStep - 2 >= index ? 'text-[#02b154]' : 'text-gray-500'}`}
-                >
-                  {step.id}
-                </span>
-                <span className='text-sm font-medium'>{step.name}</span>
-              </div>
-            </li>
-          ))}
+          {isRegistered
+            ? steps.map((step, index) => (
+                <li key={step.name} className='md:flex-1'>
+                  <div
+                    className={`group flex w-full flex-col border-l-4 py-2 pl-4 transition-colors md:border-l-0 md:border-t-4 md:pb-0 md:pl-0 md:pt-4 ${currentStep - 4 >= index ? 'border-[#02b154]' : 'border-gray-200'}`}
+                  >
+                    <span
+                      className={`text-xl font-medium transition-colors ${currentStep - 4 >= index ? 'text-[#02b154]' : 'text-gray-500'}`}
+                    >
+                      {step.id}
+                    </span>
+                    <span className='text-sm font-medium'>{step.name}</span>
+                  </div>
+                </li>
+              ))
+            : registrationSteps.map((step, index) => (
+                <li key={step.name} className='md:flex-1'>
+                  <div
+                    className={`group flex w-full flex-col border-l-4 py-2 pl-4 transition-colors md:border-l-0 md:border-t-4 md:pb-0 md:pl-0 md:pt-4 ${currentStep - 2 >= index ? 'border-[#02b154]' : 'border-gray-200'}`}
+                  >
+                    <span
+                      className={`text-xl font-medium transition-colors ${currentStep - 2 >= index ? 'text-[#02b154]' : 'text-gray-500'}`}
+                    >
+                      {step.id}
+                    </span>
+                    <span className='text-sm font-medium'>{step.name}</span>
+                  </div>
+                </li>
+              ))}
         </ol>
       </nav>
 
@@ -420,8 +475,7 @@ export default function Form() {
         )}
         {currentStep === 3 && (
           <motion.div
-          
-            initial={{ x: delta >= 0 ? '50%' : '-50%', opacity: 0 }}  
+            initial={{ x: delta >= 0 ? '50%' : '-50%', opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
           >
@@ -503,7 +557,6 @@ export default function Form() {
             <p className='mt-1 text-base leading-6 text-gray-600'>
               Thank you for your submission.
             </p>
-
           </>
         )}
 
@@ -545,79 +598,164 @@ export default function Form() {
 
         {currentStep === 7 && (
           <>
-            <h2 className='text-3xl font-semibold leading-7 text-gray-900'>
-              Address Type
-            </h2>
-            <p className='mt-1 text-base leading-6 text-gray-600'>
-              Please select the type of address you want to use.
-            </p>
-            <div className='mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6'>
-              <div className='sm:col-span-3'>
-                <label
-                  htmlFor='addressType'
-                  className='block text-sm font-medium leading-6 text-gray-900'
-                >
+            {isSavedAddress ? (
+              <>
+                <h2 className='text-3xl font-semibold leading-7 text-gray-900'>
                   Address Type
-                </label>
-                <div className='mt-2'>
-                  <select
-                    id='addressType'
-                    {...register('addressType')}
-                    className='block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6'
-                  >
-                    <option value='saved'>Saved Address</option>
-                    <option value='new'>New Address</option>
-                  </select>
-                  {errors.addressType?.message && (
-                    <p className='mt-2 text-sm text-red-400'>
-                      {errors.addressType.message}
-                    </p>
-                  )}
+                </h2>
+                <p className='mt-1 text-base leading-6 text-gray-600'>
+                  Please select the type of address you want to use.
+                </p>
+                <div className='mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6'>
+                  <div className='sm:col-span-3'>
+                    <label
+                      htmlFor='addressType'
+                      className='block text-sm font-medium leading-6 text-gray-900'
+                    >
+                      Address Type
+                    </label>
+                    <div className='mt-2'>
+                      <select
+                        id='addressType'
+                        onChange={handleAddressTypeChange}
+                        // {...register('addressType')}
+                        className='block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6'
+                      >
+                        <option value='saved'>Saved Address</option>
+                        <option value='new'>New Address</option>
+                      </select>
+                      {errors.addressType?.message && (
+                        <p className='mt-2 text-sm text-red-400'>
+                          {errors.addressType.message}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </>
+            ) : (
+              <>
+                <h2 className='text-3xl font-semibold leading-7 text-gray-900'>
+                  New Address
+                </h2>
+                <p className='mt-1 text-base leading-6 text-gray-600'>
+                  Please enter your complete address here.
+                </p>
+
+                <div className='mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6'>
+                  <div className='sm:col-span-3'>
+                    <label
+                      htmlFor='address'
+                      className='block text-sm font-medium leading-6 text-gray-900'
+                    >
+                      Address
+                    </label>
+                    <div className='mt-2'>
+                      <textarea
+                        id='address'
+                        {...register('address')}
+                        className='block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6'
+                      />
+                      {errors.address?.message && (
+                        <p className='mt-2 text-sm text-red-400'>
+                          {errors.address.message}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  className='mt-4 rounded bg-green-300 px-4 py-2 font-bold text-white hover:bg-green-700'
+                  onClick={() => setIsSavedAddress(true)}
+                >
+                  update
+                </button>
+              </>
+            )}
           </>
         )}
 
         {currentStep === 8 && (
           <>
-            <h2 className='text-3xl font-semibold leading-7 text-gray-900'>
-              Address Verification
-            </h2>
-            <p className='mt-1 text-base leading-6 text-gray-600'>
-              Your saved Address is: { localStorage.getItem('address')}
-            </p>
-            <p className='mt-1 text-base leading-6 text-gray-600'>
-            Are your sure this is valid address ?
-            </p>
-            <div className='mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6'>
-              <div className='sm:col-span-3'>
-                <label
-                  htmlFor='addressVerification'
-                  className='block text-sm font-medium leading-6 text-gray-900'
-                >
+            {isValidAddress ? (
+              <>
+                <h2 className='text-3xl font-semibold leading-7 text-gray-900'>
                   Address Verification
-                </label>
-                <div className='mt-2'>
-                  <select
-                    id='addressVerification'
-                    {...register('addressVerification')}
-                    className='block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6'
-                  >
-                    <option value='yes'>Yes</option>
-                    <option value='no'>No</option>
-                  </select>
-                  {errors.addressVerification?.message && (
-                    <p className='mt-2 text-sm text-red-400'>
-                      {errors.addressVerification.message}
-                    </p>
-                  )}
+                </h2>
+                <p className='mt-1 text-base leading-6 text-gray-600'>
+                  Your saved Address is: {localStorage.getItem('address')}
+                </p>
+                <p className='mt-1 text-base leading-6 text-gray-600'>
+                  Are you sure this is a valid address?
+                </p>
+                <div className='mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6'>
+                  <div className='sm:col-span-3'>
+                    <label
+                      htmlFor='addressVerification'
+                      className='block text-sm font-medium leading-6 text-gray-900'
+                    >
+                      Address Verification
+                    </label>
+                    <div className='mt-2'>
+                      <select
+                        id='addressVerification'
+                        {...register('addressVerification')}
+                        onChange={handleAddressValidationChange}
+                        className='block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6'
+                      >
+                        <option value='yes'>Yes</option>
+                        <option value='no'>No</option>
+                      </select>
+                      {errors.addressVerification?.message && (
+                        <p className='mt-2 text-sm text-red-400'>
+                          {errors.addressVerification.message}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </>
+            ) : (
+              <>
+                <h2 className='text-3xl font-semibold leading-7 text-gray-900'>
+                  New Address
+                </h2>
+                <p className='mt-1 text-base leading-6 text-gray-600'>
+                  Please enter your complete address here.
+                </p>
+
+                <div className='mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6'>
+                  <div className='sm:col-span-3'>
+                    <label
+                      htmlFor='address'
+                      className='block text-sm font-medium leading-6 text-gray-900'
+                    >
+                      Address
+                    </label>
+                    <div className='mt-2'>
+                      <textarea
+                        id='address'
+                        {...register('address')}
+                        className='block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6'
+                      />
+                      {errors.address?.message && (
+                        <p className='mt-2 text-sm text-red-400'>
+                          {errors.address.message}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  className='mt-4 rounded bg-green-300 px-4 py-2 font-bold text-white hover:bg-green-700'
+                  onClick={() => setIsValidAddress(true)}
+                >
+                  update
+                </button>
+              </>
+            )}
           </>
         )}
-
 
         {currentStep === 9 && (
           <>
@@ -653,7 +791,6 @@ export default function Form() {
           </>
         )}
 
-
         {currentStep === 10 && (
           <>
             <h2 className='text-3xl font-semibold leading-7 text-gray-900'>
@@ -676,9 +813,15 @@ export default function Form() {
                     {...register('preferredTime')}
                     className='block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6'
                   >
-                    <option value='Forenoon(before 12 pm)'>Forenoon(before 12 pm)</option>
-                    <option value='Afternoon(after 12 pm)'>Afternoon(after 12 pm)</option>
-                    <option value='Evening(after 6 pm)'>Evening(after 6 pm)</option>
+                    <option value='Forenoon(before 12 pm)'>
+                      Forenoon(before 12 pm)
+                    </option>
+                    <option value='Afternoon(after 12 pm)'>
+                      Afternoon(after 12 pm)
+                    </option>
+                    <option value='Evening(after 6 pm)'>
+                      Evening(after 6 pm)
+                    </option>
                   </select>
                   {errors.preferredTime?.message && (
                     <p className='mt-2 text-sm text-red-400'>
@@ -701,8 +844,6 @@ export default function Form() {
             </p>
           </>
         )}
-
-
       </form>
 
       {/* Navigation */}
@@ -711,7 +852,7 @@ export default function Form() {
           <button
             type='button'
             onClick={prev}
-            disabled={(currentStep === 0 || currentStep === 6)}
+            disabled={currentStep === 0 || currentStep === 6}
             className='rounded bg-white px-2 py-1 text-sm font-semibold text-sky-900 shadow-sm ring-1 ring-inset ring-sky-300 hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-50'
           >
             <svg
@@ -732,7 +873,9 @@ export default function Form() {
           <button
             type='button'
             onClick={handleAllCases}
-            disabled={currentStep === steps.length + registrationSteps.length - 1}
+            disabled={
+              currentStep === steps.length + registrationSteps.length - 1
+            }
             className='rounded bg-white px-2 py-1 text-sm font-semibold text-sky-900 shadow-sm ring-1 ring-inset ring-sky-300 hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-50'
           >
             <svg
