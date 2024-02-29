@@ -193,7 +193,7 @@ export default function Form() {
   }, [currentStep, seconds])
 
   const handleSendOtp = async () => {
-    console.log('otp send')
+    setIsLoading(true)
     try {
       const appVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         size: 'invisible'
@@ -208,17 +208,20 @@ export default function Form() {
       const response = await api.post('/api/v1/auth/login', { phone: value })
       if (response.data.success) {
         setVerificationId(confirmationResult)
+        setIsLoading(false)
         next()
       } else {
+        setIsLoading(false)
         alert('Phone verification request failed.')
       }
     } catch (error) {
+      setIsLoading(false)
       alert('Phone verification request failed.')
     }
   }
 
   const handleVerifyOtp = async () => {
-    console.log('atleat here')
+    setIsLoading(true)
     try {
       console.log('inside', verificationId)
       const phone = getValues('phoneNumber')
@@ -233,6 +236,7 @@ export default function Form() {
         if (response.data.result.isRegistered) {
           console.log('registered')
           setIsRegistered(true)
+          setIsLoading(false)
           setCurrentStep(step => step + 5)
           return
         }
@@ -240,8 +244,10 @@ export default function Form() {
         setIsRegistered(false)
         next()
       }
+      setIsLoading(false)
     } catch (error) {
       alert('OTP verification failed.')
+      setIsLoading(false)
     }
   }
 
@@ -338,7 +344,9 @@ export default function Form() {
         next()
         break
       case 6:
-        getValues('request') === 'walkin' ? setCurrentStep(step => step + 3) : next()
+        getValues('request') === 'walkin'
+          ? setCurrentStep(step => step + 3)
+          : next()
         break
       default:
         next()
@@ -347,6 +355,7 @@ export default function Form() {
 
   useEffect(() => {
     console.log('currentStep', currentStep)
+    console.log('isLoading', isLoading)
     localStorage.setItem('address', getValues('address'))
   }, [currentStep, getValues])
 
@@ -945,6 +954,14 @@ export default function Form() {
               />
             </svg>
           </button>
+          {isLoading}
+          {isLoading ? (
+            <div className='loader'>
+              <div className='spinner'></div>
+              Loading...
+            </div>
+          ) : null}
+
           <button
             type='button'
             onClick={handleAllCases}
