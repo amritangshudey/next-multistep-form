@@ -388,13 +388,13 @@ export default function Form() {
       {/* logo */}
       <div className='justify-left flex items-center mb-10'>
         <Image
-          src='./eco_earn_svg.svg'
+          src='./eco_earn_logo.svg'
           alt='logo'
           height={10}
           width={10}
           className='h-12 w-auto object-contain'
         />
-        <p className='ml-4 text-xl font-extrabold text-green-700'> eco earn</p>
+        
       </div>
       {/* steps */}
       <nav aria-label='Progress'>
