@@ -28,16 +28,7 @@ const steps = [
     name: 'OTP',
     fields: ['otp']
   },
-
-  //   {how many bottles you have ?: "12", which character is missing a b d ?: "Forenoon(before 12 pm)"}
-  // how many bottles you have ?
-  // :
-  // "12"
-  // which character is missing a b d ?
-  // :
-  // "Forenoon(before 12 pm)"
-
-  { id: 'STEP 3', name: 'New Request', fields: ['request'] }, //walkin -> no contain -> time
+  { id: 'STEP 3', name: 'New Request', fields: ['request'] },
   {
     id: 'STEP 4',
     name: 'Address Type',
@@ -61,8 +52,13 @@ const steps = [
   },
   {
     id: 'STEP 8',
-    name: 'Complete Request',
+    name: 'Submit Request',
     fields: ['submit']
+  },
+  {
+    id: 'STEP 9',
+    name: 'Complete',
+    fields: ['thankYou']
   }
 ]
 
@@ -150,7 +146,6 @@ export default function Form() {
   const handleAddressTypeChange = (event: SelectChangeEvent) => {
     const selectedValue = event.target.value
     setIsSavedAddress(selectedValue === 'saved')
-    setValue('addressType', selectedValue)
   }
 
   const handleAddressValidationChange = (event: SelectChangeEvent) => {
@@ -263,9 +258,11 @@ export default function Form() {
           const address = `${latitude},${longitude}`
           if (isProfileUpdate) {
             localStorage.setItem('address', address)
+            setValue('address', address)
             profileUpdate(key, address)
           } else {
             localStorage.setItem('address', address)
+            setValue('address', address)
           }
         },
         error => {
@@ -299,6 +296,7 @@ export default function Form() {
   }
 
   const newSubmission = async () => {
+    setIsLoading(true)
     const address_value = localStorage.getItem('address')
     const submitData = {
       'how many bottles you have ?': getValues('containerNumber'),
@@ -314,11 +312,14 @@ export default function Form() {
       })
       if (response.status === 200) {
         console.log(response)
-        alert('Request submitted successfully.')
+        // alert('Request submitted successfully.')
       } else {
         alert('Request submission failed.')
       }
+      setIsLoading(false)
     } catch (error) {
+      alert('Request submission failed.')
+      setIsLoading(false)
       console.log(error)
     }
   }
@@ -355,9 +356,7 @@ export default function Form() {
 
   useEffect(() => {
     console.log('currentStep', currentStep)
-    console.log('isLoading', isLoading)
-    localStorage.setItem('address', getValues('address'))
-  }, [currentStep, getValues])
+  }, [currentStep])
 
   return (
     <section className='absolute inset-0 flex flex-col justify-between p-24'>
@@ -701,8 +700,8 @@ export default function Form() {
                     <div className='mt-2'>
                       <select
                         id='addressType'
+                        {...register('addressType')}
                         onChange={handleAddressTypeChange}
-                        // {...register('addressType')}
                         className='block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6'
                       >
                         <option value='saved'>Saved Address</option>
@@ -750,7 +749,8 @@ export default function Form() {
                 </div>
                 <button
                   className='mt-4 rounded bg-green-300 px-4 py-2 font-bold text-white hover:bg-green-700'
-                  onClick={() => setIsSavedAddress(true)}
+                  onClick={() => {setIsSavedAddress(true) 
+                    localStorage.setItem('address', getValues('address'))}}
                 >
                   update
                 </button>
@@ -802,7 +802,7 @@ export default function Form() {
             ) : (
               <>
                 <h2 className='text-3xl font-semibold leading-7 text-gray-900'>
-                  New Address
+                  Update Address
                 </h2>
                 <p className='mt-1 text-base leading-6 text-gray-600'>
                   Please enter your complete address here.
@@ -832,7 +832,8 @@ export default function Form() {
                 </div>
                 <button
                   className='mt-4 rounded bg-green-300 px-4 py-2 font-bold text-white hover:bg-green-700'
-                  onClick={() => setIsValidAddress(true)}
+                  onClick={() => {setIsValidAddress(true)
+                    localStorage.setItem('address', getValues('address'))}}
                 >
                   update
                 </button>
@@ -921,10 +922,21 @@ export default function Form() {
         {currentStep === 11 && (
           <>
             <h2 className='text-3xl font-semibold leading-7 text-gray-900'>
-              Complete Request
+              Submit Request
             </h2>
             <p className='mt-1 text-base leading-6 text-gray-600'>
-              Thank you for your submission.
+              Click Next to submit your request.
+            </p>
+          </>
+        )}
+
+        {currentStep === 12 && (
+          <>
+            <h2 className='text-3xl font-semibold leading-7 text-gray-900'>
+              Thank You !!
+            </h2>
+            <p className='mt-1 text-base leading-6 text-gray-600'>
+              Your request has been submitted successfully.
             </p>
           </>
         )}
