@@ -87,7 +87,7 @@ export default function Form() {
   const [verificationId, setVerificationId] = useState<Awaited<
     ReturnType<typeof signInWithPhoneNumber>
   > | null>(null)
-  const [isRegistered, setIsRegistered] = useState(true)
+  const [isRegistered, setIsRegistered] = useState(1)
   const delta = currentStep - previousStep
   const [isValidAddress, setIsValidAddress] = useState(true)
   const [isSavedAddress, setIsSavedAddress] = useState(true)
@@ -117,11 +117,10 @@ export default function Form() {
   type FieldName = keyof Inputs
 
   const next = async () => {
-    // console.log('next', currentStep)
-    // const fields = steps[currentStep].fields
-    // const output = await trigger(fields as FieldName[], { shouldFocus: true })
+    const fields = isRegistered === 2 ?  steps[currentStep-4].fields : isRegistered === 1 ? steps[currentStep].fields : registrationSteps[currentStep - 2].fields
+    const output = await trigger(fields as FieldName[], { shouldFocus: true })
 
-    // if (!output) return
+    if (!output) return
 
     if (currentStep < steps.length + registrationSteps.length - 1) {
       if (currentStep === steps.length + registrationSteps.length - 2) {
@@ -230,13 +229,13 @@ export default function Form() {
         setAuthorization(response.data.result.token)
         if (response.data.result.isRegistered) {
           console.log('registered')
-          setIsRegistered(true)
+          setIsRegistered(2)
           setIsLoading(false)
           setCurrentStep(step => step + 5)
           return
         }
         console.log('not registered')
-        setIsRegistered(false)
+        setIsRegistered(0)
         next()
       }
       setIsLoading(false)
@@ -337,7 +336,7 @@ export default function Form() {
         next()
         break
       case 5:
-        setIsRegistered(true)
+        setIsRegistered(2)
         const fullname = getValues('fullName')
         const email = getValues('email')
         const address = getValues('address')
@@ -378,10 +377,10 @@ export default function Form() {
             ? steps.map((step, index) => (
                 <li key={step.name} className='md:flex-1'>
                   <div
-                    className={`group flex w-full flex-col border-l-4 py-2 pl-4 transition-colors md:border-l-0 md:border-t-4 md:pb-0 md:pl-0 md:pt-4 ${currentStep - 4 >= index ? 'border-[#02b154]' : 'border-gray-200'}`}
+                    className={`group flex w-full flex-col border-l-4 py-2 pl-4 transition-colors md:border-l-0 md:border-t-4 md:pb-0 md:pl-0 md:pt-4 ${(isRegistered === 2 ? ((currentStep - 4) >= index) :((currentStep) >= index)) ? 'border-[#02b154]' : 'border-gray-200'}`}
                   >
                     <span
-                      className={`text-xl font-medium transition-colors ${currentStep - 4 >= index ? 'text-[#02b154]' : 'text-gray-500'}`}
+                      className={`text-xl font-medium transition-colors ${(isRegistered === 2 ? ((currentStep - 4) >= index) :((currentStep) >= index)) ? 'text-[#02b154]' : 'text-gray-500'}`}
                     >
                       {step.id}
                     </span>

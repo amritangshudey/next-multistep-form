@@ -14,8 +14,8 @@ export const FormDataSchema = z.object({
     .regex(/^\d+$/, 'OTP should only contain numbers'),
   email: z.string().email('Invalid email address'),
   request: z.enum(['pickup', 'walkin']),
-  addressType: z.string().min(1, 'Address type is required'),
+  addressType: z.enum(['saved', 'new']),
   addressVerification: z.string().min(1, 'Address verification is required'),
-  containerNumber: z.string().min(1, 'Container number is required'),
+  containerNumber: z.string().regex(/^\d+$/, 'Should only contain numbers').min(1, 'Container number is required'),
   preferredTime: z.enum(['Forenoon(before 12 pm)', 'Afternoon(after 12 pm)', 'Evening(after 6 pm)']),
 })
