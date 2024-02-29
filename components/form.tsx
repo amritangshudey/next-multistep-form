@@ -384,9 +384,9 @@ export default function Form() {
   }, [currentStep])
 
   return (
-    <section className='absolute inset-0 flex flex-col justify-between p-24'>
+    <section className='absolute inset-0 flex flex-col justify-between p-24 pt-10'>
       {/* logo */}
-      <div className='justify-left flex items-center '>
+      <div className='justify-left flex items-center mb-10'>
         <Image
           src='./eco_earn_svg.svg'
           alt='logo'
@@ -445,7 +445,7 @@ export default function Form() {
             <p className='mt-1 text-base leading-6 text-gray-600'>
               You will be receiving an OTP on this number.
             </p>
-            <div id='recaptcha-container'></div>
+            <div id='recaptcha-container' className='hidden'></div>
             <div className='mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6'>
               <div className='sm:col-span-3'>
                 <label
@@ -459,8 +459,22 @@ export default function Form() {
                     type='text'
                     id='phoneNumber'
                     {...register('phoneNumber')}
-                    className='block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6'
+                    className='block w-full border-none bg-inherit px-4 py-3 leading-6 text-gray-900 placeholder-gray-400 outline-none focus:border-none focus:outline-none focus:ring-0 focus:ring-inset focus:ring-green-600 sm:text-lg'
+                    style={{ borderBottom: '2px solid #d3d3d3' }}
+                    onFocus={() => {
+                      const element = document.getElementById('phoneNumber')
+                      if (element) {
+                        element.style.borderBottom = '2px solid #02b154'
+                      }
+                    }}
+                    onBlur={() => {
+                      const element = document.getElementById('phoneNumber')
+                      if (element) {
+                        element.style.borderBottom = '2px solid #d3d3d3'
+                      }
+                    }}
                   />
+
                   {errors.phoneNumber?.message && (
                     <p className='mt-2 text-sm text-red-400'>
                       {errors.phoneNumber.message}
@@ -531,8 +545,20 @@ export default function Form() {
                     type='text'
                     id='otp'
                     {...register('otp')}
-                    className='block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6'
-                  />
+                className='block w-full border-none bg-inherit px-4 py-3 leading-6 text-gray-900 placeholder-gray-400 outline-none focus:border-none focus:outline-none focus:ring-0 focus:ring-inset focus:ring-green-600 sm:text-lg'
+                    style={{ borderBottom: '2px solid #d3d3d3' }}
+                    onFocus={() => {
+                      const element = document.getElementById('phoneNumber')
+                      if (element) {
+                        element.style.borderBottom = '2px solid #02b154'
+                      }
+                    }}
+                    onBlur={() => {
+                      const element = document.getElementById('phoneNumber')
+                      if (element) {
+                        element.style.borderBottom = '2px solid #d3d3d3'
+                      }
+                    }}  />
                   {errors.otp?.message && (
                     <p className='mt-2 text-sm text-red-400'>
                       {errors.otp.message}
@@ -569,8 +595,20 @@ export default function Form() {
                     type='text'
                     id='fullName'
                     {...register('fullName')}
-                    className='block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6'
-                  />
+                className='block w-full border-none bg-inherit px-4 py-3 leading-6 text-gray-900 placeholder-gray-400 outline-none focus:border-none focus:outline-none focus:ring-0 focus:ring-inset focus:ring-green-600 sm:text-lg'
+                    style={{ borderBottom: '2px solid #d3d3d3' }}
+                    onFocus={() => {
+                      const element = document.getElementById('phoneNumber')
+                      if (element) {
+                        element.style.borderBottom = '2px solid #02b154'
+                      }
+                    }}
+                    onBlur={() => {
+                      const element = document.getElementById('phoneNumber')
+                      if (element) {
+                        element.style.borderBottom = '2px solid #d3d3d3'
+                      }
+                    }}  />
                   {errors.fullName?.message && (
                     <p className='mt-2 text-sm text-red-400'>
                       {errors.fullName.message}
@@ -606,8 +644,20 @@ export default function Form() {
                     type='email'
                     id='email'
                     {...register('email')}
-                    className='block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6'
-                  />
+                className='block w-full border-none bg-inherit px-4 py-3 leading-6 text-gray-900 placeholder-gray-400 outline-none focus:border-none focus:outline-none focus:ring-0 focus:ring-inset focus:ring-green-600 sm:text-lg'
+                    style={{ borderBottom: '2px solid #d3d3d3' }}
+                    onFocus={() => {
+                      const element = document.getElementById('phoneNumber')
+                      if (element) {
+                        element.style.borderBottom = '2px solid #02b154'
+                      }
+                    }}
+                    onBlur={() => {
+                      const element = document.getElementById('phoneNumber')
+                      if (element) {
+                        element.style.borderBottom = '2px solid #d3d3d3'
+                      }
+                    }}  />
                   {errors.email?.message && (
                     <p className='mt-2 text-sm text-red-400'>
                       {errors.email.message}
@@ -644,8 +694,20 @@ export default function Form() {
                   <textarea
                     id='address'
                     {...register('address')}
-                    className='block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6'
-                  />
+                className='block w-full border-none bg-inherit px-4 py-3 leading-6 text-gray-900 placeholder-gray-400 outline-none focus:border-none focus:outline-none focus:ring-0 focus:ring-inset focus:ring-green-600 sm:text-lg'
+                    style={{ borderBottom: '2px solid #d3d3d3' }}
+                    onFocus={() => {
+                      const element = document.getElementById('phoneNumber')
+                      if (element) {
+                        element.style.borderBottom = '2px solid #02b154'
+                      }
+                    }}
+                    onBlur={() => {
+                      const element = document.getElementById('phoneNumber')
+                      if (element) {
+                        element.style.borderBottom = '2px solid #d3d3d3'
+                      }
+                    }}  />
                   {errors.address?.message && (
                     <p className='mt-2 text-sm text-red-400'>
                       {errors.address.message}
@@ -688,10 +750,27 @@ export default function Form() {
                   <select
                     id='request'
                     {...register('request')}
-                    className='block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6'
-                  >
+                className='block w-full border-none bg-inherit px-4 py-3 leading-6 text-gray-900 placeholder-gray-400 outline-none focus:border-none focus:outline-none focus:ring-0 focus:ring-inset focus:ring-green-600 sm:text-lg'
+                    style={{ borderBottom: '2px solid #d3d3d3' }}
+                    onFocus={() => {
+                      const element = document.getElementById('phoneNumber')
+                      if (element) {
+                        element.style.borderBottom = '2px solid #02b154'
+                      }
+                    }}
+                    onBlur={() => {
+                      const element = document.getElementById('phoneNumber')
+                      if (element) {
+                        element.style.borderBottom = '2px solid #d3d3d3'
+                      }
+                    }}  >
                     <option value='pickup'>Pickup</option>
-                    <option value='walkin'>Walkin</option>
+                    <option
+                      value='walkin'
+                      className='bg-white text-gray-900 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none'
+                    >
+                      Walkin
+                    </option>
                   </select>
                   {errors.request?.message && (
                     <p className='mt-2 text-sm text-red-400'>
@@ -727,10 +806,32 @@ export default function Form() {
                         id='addressType'
                         {...register('addressType')}
                         onChange={handleAddressTypeChange}
-                        className='block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6'
-                      >
-                        <option value='saved'>Saved Address</option>
-                        <option value='new'>New Address</option>
+                    className='block w-full border-none bg-inherit px-4 py-3 leading-6 text-gray-900 placeholder-gray-400 outline-none focus:border-none focus:outline-none focus:ring-0 focus:ring-inset focus:ring-green-600 sm:text-lg'
+                    style={{ borderBottom: '2px solid #d3d3d3' }}
+                    onFocus={() => {
+                      const element = document.getElementById('phoneNumber')
+                      if (element) {
+                        element.style.borderBottom = '2px solid #02b154'
+                      }
+                    }}
+                    onBlur={() => {
+                      const element = document.getElementById('phoneNumber')
+                      if (element) {
+                        element.style.borderBottom = '2px solid #d3d3d3'
+                      }
+                    }}      >
+                        <option
+                          value='saved'
+                          className='bg-white text-gray-900 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none'
+                        >
+                          Saved Address
+                        </option>
+                        <option
+                          value='new'
+                          className='bg-white text-gray-900 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none'
+                        >
+                          New Address
+                        </option>
                       </select>
                       {errors.addressType?.message && (
                         <p className='mt-2 text-sm text-red-400'>
@@ -762,8 +863,20 @@ export default function Form() {
                       <textarea
                         id='address'
                         {...register('address')}
-                        className='block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6'
-                      />
+                    className='block w-full border-none bg-inherit px-4 py-3 leading-6 text-gray-900 placeholder-gray-400 outline-none focus:border-none focus:outline-none focus:ring-0 focus:ring-inset focus:ring-green-600 sm:text-lg'
+                    style={{ borderBottom: '2px solid #d3d3d3' }}
+                    onFocus={() => {
+                      const element = document.getElementById('phoneNumber')
+                      if (element) {
+                        element.style.borderBottom = '2px solid #02b154'
+                      }
+                    }}
+                    onBlur={() => {
+                      const element = document.getElementById('phoneNumber')
+                      if (element) {
+                        element.style.borderBottom = '2px solid #d3d3d3'
+                      }
+                    }}      />
                       {errors.address?.message && (
                         <p className='mt-2 text-sm text-red-400'>
                           {errors.address.message}
@@ -812,10 +925,32 @@ export default function Form() {
                         id='addressVerification'
                         {...register('addressVerification')}
                         onChange={handleAddressValidationChange}
-                        className='block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6'
-                      >
-                        <option value='yes'>Yes</option>
-                        <option value='no'>No</option>
+                    className='block w-full border-none bg-inherit px-4 py-3 leading-6 text-gray-900 placeholder-gray-400 outline-none focus:border-none focus:outline-none focus:ring-0 focus:ring-inset focus:ring-green-600 sm:text-lg'
+                    style={{ borderBottom: '2px solid #d3d3d3' }}
+                    onFocus={() => {
+                      const element = document.getElementById('phoneNumber')
+                      if (element) {
+                        element.style.borderBottom = '2px solid #02b154'
+                      }
+                    }}
+                    onBlur={() => {
+                      const element = document.getElementById('phoneNumber')
+                      if (element) {
+                        element.style.borderBottom = '2px solid #d3d3d3'
+                      }
+                    }}      >
+                        <option
+                          value='yes'
+                          className='bg-white text-gray-900 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none'
+                        >
+                          Yes
+                        </option>
+                        <option
+                          value='no'
+                          className='bg-white text-gray-900 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none'
+                        >
+                          No
+                        </option>
                       </select>
                       {errors.addressVerification?.message && (
                         <p className='mt-2 text-sm text-red-400'>
@@ -847,8 +982,20 @@ export default function Form() {
                       <textarea
                         id='address'
                         {...register('address')}
-                        className='block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6'
-                      />
+                    className='block w-full border-none bg-inherit px-4 py-3 leading-6 text-gray-900 placeholder-gray-400 outline-none focus:border-none focus:outline-none focus:ring-0 focus:ring-inset focus:ring-green-600 sm:text-lg'
+                    style={{ borderBottom: '2px solid #d3d3d3' }}
+                    onFocus={() => {
+                      const element = document.getElementById('phoneNumber')
+                      if (element) {
+                        element.style.borderBottom = '2px solid #02b154'
+                      }
+                    }}
+                    onBlur={() => {
+                      const element = document.getElementById('phoneNumber')
+                      if (element) {
+                        element.style.borderBottom = '2px solid #d3d3d3'
+                      }
+                    }}      />
                       {errors.address?.message && (
                         <p className='mt-2 text-sm text-red-400'>
                           {errors.address.message}
@@ -885,15 +1032,27 @@ export default function Form() {
                   htmlFor='containerNumber'
                   className='block text-sm font-medium leading-6 text-gray-900'
                 >
-                  Container Number
+                  Number Of Containers
                 </label>
                 <div className='mt-2'>
                   <input
                     type='text'
                     id='containerNumber'
                     {...register('containerNumber')}
-                    className='block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6'
-                  />
+                className='block w-full border-none bg-inherit px-4 py-3 leading-6 text-gray-900 placeholder-gray-400 outline-none focus:border-none focus:outline-none focus:ring-0 focus:ring-inset focus:ring-green-600 sm:text-lg'
+                    style={{ borderBottom: '2px solid #d3d3d3' }}
+                    onFocus={() => {
+                      const element = document.getElementById('phoneNumber')
+                      if (element) {
+                        element.style.borderBottom = '2px solid #02b154'
+                      }
+                    }}
+                    onBlur={() => {
+                      const element = document.getElementById('phoneNumber')
+                      if (element) {
+                        element.style.borderBottom = '2px solid #d3d3d3'
+                      }
+                    }}  />
                   {errors.containerNumber?.message && (
                     <p className='mt-2 text-sm text-red-400'>
                       {errors.containerNumber.message}
@@ -925,15 +1084,37 @@ export default function Form() {
                   <select
                     id='preferredTime'
                     {...register('preferredTime')}
-                    className='block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6'
-                  >
-                    <option value='Forenoon(before 12 pm)'>
+                className='block w-full border-none bg-inherit px-4 py-3 leading-6 text-gray-900 placeholder-gray-400 outline-none focus:border-none focus:outline-none focus:ring-0 focus:ring-inset focus:ring-green-600 sm:text-lg'
+                    style={{ borderBottom: '2px solid #d3d3d3' }}
+                    onFocus={() => {
+                      const element = document.getElementById('phoneNumber')
+                      if (element) {
+                        element.style.borderBottom = '2px solid #02b154'
+                      }
+                    }}
+                    onBlur={() => {
+                      const element = document.getElementById('phoneNumber')
+                      if (element) {
+                        element.style.borderBottom = '2px solid #d3d3d3'
+                      }
+                    }}  >
+                    <option
+                      value='Forenoon(before 12 pm)'
+                      className='bg-white text-gray-900 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none'
+                    >
                       Forenoon(before 12 pm)
                     </option>
-                    <option value='Afternoon(after 12 pm)'>
+
+                    <option
+                      value='Afternoon(after 12 pm)'
+                      className='bg-white text-gray-900 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none'
+                    >
                       Afternoon(after 12 pm)
                     </option>
-                    <option value='Evening(after 6 pm)'>
+                    <option
+                      value='Evening(after 6 pm)'
+                      className='bg-white text-gray-900 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none'
+                    >
                       Evening(after 6 pm)
                     </option>
                   </select>
@@ -973,13 +1154,13 @@ export default function Form() {
 
       {/* Navigation */}
       <div className='mt-8 pt-5'>
-        <div className='flex justify-between'>
+        <div className='flex justify-start gap-10'>
           <button
             type='button'
             onClick={prev}
             disabled={currentStep === 0 || currentStep === 6}
-            className='rounded bg-white px-2 py-1 text-sm font-semibold text-sky-900 shadow-sm ring-1 ring-inset ring-sky-300 hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-50'
-          >
+            className='rounded bg-white px-16 py-8 text-sm font-semibold text-green-900 shadow-sm ring-1 ring-inset ring-green-300 hover:bg-green-100 disabled:cursor-not-allowed disabled:opacity-50'
+            >
             <svg
               xmlns='http://www.w3.org/2000/svg'
               fill='none'
@@ -995,13 +1176,7 @@ export default function Form() {
               />
             </svg>
           </button>
-          {isLoading}
-          {isLoading ? (
-            <div className='loader'>
-              <div className='spinner'></div>
-              Loading...
-            </div>
-          ) : null}
+         
 
           <button
             type='button'
@@ -1009,7 +1184,7 @@ export default function Form() {
             disabled={
               currentStep === steps.length + registrationSteps.length - 1
             }
-            className='rounded bg-white px-2 py-1 text-sm font-semibold text-sky-900 shadow-sm ring-1 ring-inset ring-sky-300 hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-50'
+            className='rounded bg-white px-16 py-8 text-sm font-semibold text-green-900 shadow-sm ring-1 ring-inset ring-green-300 hover:bg-green-100 disabled:cursor-not-allowed disabled:opacity-50'
           >
             <svg
               xmlns='http://www.w3.org/2000/svg'
@@ -1028,6 +1203,12 @@ export default function Form() {
           </button>
         </div>
       </div>
+      {isLoading ? (
+            <div className='loader '>
+              <div className='spinner'></div>
+            
+            </div>
+          ) : null}
     </section>
   )
 }
